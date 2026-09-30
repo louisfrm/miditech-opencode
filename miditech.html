@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Miditech - OpenCode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #fbfdff;
+        --bg-strong: #f3f7ff;
+        --ink: #0a1222;
+        --muted: #52627a;
+        --accent: #1f7bff;
+        --accent-2: #00c2ff;
+        --accent-3: #0b2d6b;
+        --card: rgba(255, 255, 255, 0.78);
+        --border: rgba(10, 18, 34, 0.14);
+        --shadow: 0 30px 80px rgba(10, 18, 34, 0.18);
+        --glow: 0 0 80px rgba(31, 123, 255, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: "Sora", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        overflow: hidden;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: -20%;
+        z-index: -2;
+        background: radial-gradient(circle at 20% 20%, rgba(31, 123, 255, 0.12), transparent 45%),
+          radial-gradient(circle at 80% 10%, rgba(0, 194, 255, 0.12), transparent 40%),
+          radial-gradient(circle at 70% 80%, rgba(11, 45, 107, 0.08), transparent 45%);
+        filter: blur(0px);
+      }
+
+      body::after {
+        background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 250, 255, 0.98) 45%, rgba(248, 252, 255, 0.96) 100%);
+        opacity: 1;
+        z-index: -3;
+      }
+
+      #nodes {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.65;
+      }
+
+      #topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        padding: 1.2rem 3rem 0.8rem;
+        z-index: 10;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+      }
+
+      .brand {
+        font-family: "Syne", sans-serif;
+        font-size: 1.4rem;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .brand .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        box-shadow: 0 0 12px rgba(31, 123, 255, 0.35);
+      }
+
+      #progress-wrap {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      #progress {
+        width: 160px;
+        height: 6px;
+        background: rgba(10, 18, 34, 0.12);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      #progress span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      }
+
+      #status {
+        font-size: 0.85rem;
+      }
+
+      #deck {
+        height: 100vh;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+        position: relative;
+        z-index: 1;
+      }
+
+      .slide {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        display: flex;
+        align-items: center;
+        padding: 6rem clamp(2rem, 4vw, 5rem) 4rem;
+        position: relative;
+      }
+
+
+      .slide-inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 3rem;
+        width: 100%;
+        align-items: center;
+      }
+
+      .small-note { font-size: 0.8rem; line-height: 1.45; color: var(--muted); }
+      .slide .steps { line-height: 1.5; }
+      .slide pre { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; font-size: 0.78rem; }
+      .slide pre code { color: inherit; background: transparent; padding: 0; font: inherit; }
+      .media-stack { scrollbar-width: thin; }
+      .slide.compact .slide-inner {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin: 0 0 0.6rem;
+      }
+
+      h1,
+      h2 {
+        font-family: "Syne", sans-serif;
+        margin: 0 0 1rem;
+      }
+
+      h1 {
+        font-size: clamp(2.6rem, 4vw, 4.2rem);
+      }
+
+      h2 {
+        font-size: clamp(2rem, 3vw, 3rem);
+      }
+
+      p {
+        line-height: 1.6;
+        color: var(--muted);
+        margin: 0 0 1.2rem;
+      }
+
+      a {
+        color: var(--accent-3);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(31, 123, 255, 0.35);
+      }
+
+      a:hover {
+        color: var(--accent);
+        border-bottom-color: rgba(31, 123, 255, 0.5);
+      }
+
+      .lead {
+        font-size: 1.15rem;
+        color: var(--ink);
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1rem 0 1.6rem;
+      }
+
+      .badge {
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .badge.accent {
+        background: rgba(31, 123, 255, 0.14);
+        color: #0a2b66;
+      }
+
+      .badge.teal {
+        background: rgba(0, 194, 255, 0.12);
+        color: #00506a;
+      }
+
+      .steps {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: var(--ink);
+      }
+
+      .steps li {
+        margin-bottom: 0.6rem;
+      }
+
+      .steps ul {
+        margin-top: 0.4rem;
+      }
+
+      .steps ol {
+        margin-top: 0.4rem;
+      }
+
+      .steps li pre {
+        margin: 0.6rem 0 0.8rem;
+      }
+
+      code {
+        font-family: "Sora", sans-serif;
+        font-size: 0.95em;
+        background: rgba(10, 18, 34, 0.08);
+        padding: 0.1rem 0.3rem;
+        border-radius: 6px;
+      }
+
+      pre {
+        background: #0b1630;
+        color: #f5f0e8;
+        padding: 1rem;
+        border-radius: 12px;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+
+
+      .media-card {
+        background: var(--card);
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-height: 80vh;
+        overflow: hidden;
+      }
+
+      .media-stack {
+        max-height: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 0.4rem;
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .media-image {
+        width: 100%;
+        height: auto;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        display: block;
+        object-fit: contain;
+        background: #fff;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1.8rem;
+      }
+
+      .btn {
+        border: none;
+        padding: 0.8rem 1.6rem;
+        border-radius: 999px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--ink);
+        color: #f7f2ea;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        pointer-events: auto;
+      }
+
+      .btn.secondary {
+        background: transparent;
+        border: 1px solid var(--ink);
+        color: var(--ink);
+      }
+
+      .btn.ghost {
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(30, 26, 22, 0.2);
+      }
+
+      .task-grid {
+        display: grid;
+        gap: 1.2rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .task-card {
+        padding: 1rem 1.2rem;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--border);
+        text-decoration: none;
+        border-bottom: none;
+        color: var(--ink);
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .task-card span {
+        font-size: 0.75rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+      }
+
+      .task-card strong {
+        font-size: 1rem;
+      }
+
+      #rail {
+        position: fixed;
+        top: 50%;
+        right: 1.5rem;
+        transform: translateY(-50%);
+        z-index: 9;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+
+      #rail button {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(10, 18, 34, 0.25);
+        cursor: pointer;
+        position: relative;
+      }
+
+      #rail button.active {
+        background: var(--accent);
+        transform: scale(1.2);
+      }
+
+      #rail button::after {
+        content: attr(data-title);
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(10, 18, 34, 0.85);
+        color: #f7f2ea;
+        padding: 0.3rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+
+      #rail button:hover::after {
+        opacity: 1;
+      }
+
+
+      .kicker {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .hero {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero-title {
+        font-size: clamp(3rem, 7vw, 6rem);
+        line-height: 0.92;
+        letter-spacing: -0.02em;
+        text-transform: none;
+        text-align: center;
+        margin-top: 1.2rem;
+      }
+
+      .hero-title span {
+        display: block;
+      }
+
+      .hero-title .word-accent {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .hero-logo-wrap {
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+
+      .hero-stack {
+        width: min(720px, 100%);
+        margin: 0 auto;
+        display: grid;
+        gap: 0.8rem;
+        justify-items: center;
+      }
+
+      .hero-logo {
+        width: clamp(220px, 34vw, 520px);
+        height: auto;
+        filter: drop-shadow(0 18px 40px rgba(11, 45, 107, 0.35));
+      }
+
+
+      body.on-cover #topbar,
+      body.on-cover #rail {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      @media (max-width: 960px) {
+        #topbar {
+          padding: 1rem 1.5rem 0.6rem;
+        }
+
+        .slide-inner {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        #rail {
+          display: none;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .slide {
+          padding: 6rem 1.5rem 3rem;
+        }
+
+        .cta-row {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        #progress-wrap {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="nodes" aria-hidden="true"></canvas>
+    <header id="topbar">
+      <div class="brand"><span class="dot"></span> Miditech OpenCode</div>
+      <div id="progress-wrap">
+        <div id="progress"><span></span></div>
+        <div id="status">0/11</div>
+      </div>
+      <div aria-hidden="true"></div>
+    </header>
+
+    <nav id="rail" aria-label="Navigation des slides"></nav>
+
+    <main id="deck">
+<section id="cover" class="slide compact hero" data-title="Accueil" data-type="intro"><div class="slide-inner"><div class="hero-stack"><div class="hero-logo-wrap"><img class="hero-logo" src="assets/miditech.png" alt="Logo Miditech"></div><h1 class="hero-title"><span class="word-accent">OpenCode</span></h1><div class="badge-row"><span class="badge">Suite du Miditech Codex</span></div></div></div></section>
+<section id="agenda" class="slide compact" data-title="Sommaire" data-type="agenda"><div class="slide-inner"><div><p class="eyebrow">Fil rouge</p><h2>Du coding agent à l'environnement agentique</h2><p class="lead">Sur votre fork d'<code>agents.md</code> : permissions, délégation, commandes, Skill et revue d'une faille dans un diff.</p><div class="task-grid" id="task-grid"></div></div></div></section>
+<section id="task-01" class="slide compact" data-title="Démarrer sur le fork" data-type="task" data-task="01"><div class="slide-inner"><div><p class="eyebrow">Tâche 01 · Préparer</p><h2>Démarrer sur le fork</h2><p class="lead">Travaillez dans le dépôt d'exercice ; gardez le serveur de développement séparé d'OpenCode.</p><ol class="steps"><li>Clonez le dépôt d’exercice et ouvrez sa racine.<pre><code>git clone https://github.com/louisfrm/agents.md-part2.git
+cd agents.md-part2
+git status --short</code></pre></li><li>Installez les dépendances et démarrez le site dans un terminal.<pre><code>npm install
+npm run dev</code></pre></li><li>Dans un second terminal à la même racine, lancez OpenCode.<pre><code>opencode</code></pre></li></ol></div></div></section>
+<section id="task-02" class="slide" data-title="Créer la configuration projet" data-type="task" data-task="02"><div class="slide-inner"><div><p class="eyebrow">Tâche 02 · Configurer</p><h2>Créer la configuration projet</h2><p class="lead">Placez les réglages OpenCode dans le dépôt pour que l'équipe puisse les relire.</p><ol class="steps"><li>Dans la racine de votre fork <code>agents.md</code> (le dossier contenant <code>package.json</code> et <code>AGENTS.md</code>), cr&eacute;ez <code>opencode.json</code> avec le contenu ci-contre.</li><li>Au m&ecirc;me endroit, cr&eacute;ez les dossiers <code>.opencode/agents/</code>, <code>.opencode/commands/</code> et <code>.opencode/skills/</code>.</li><li>Laissez ces dossiers vides pour le moment : vous ajouterez les fichiers dans les t&acirc;ches suivantes.</li></ol></div><aside class="media-card"><div class="media-stack"><p class="kicker">opencode.json</p><pre><code>{
+  &quot;$schema&quot;: &quot;https://opencode.ai/config.json&quot;,
+  &quot;agents&quot;: {
+    &quot;build&quot;: {
+      &quot;description&quot;: &quot;Développe le site agents.md et délègue les audits&quot;
+    }
+  }
+}</code></pre><p class="small-note"><code>build</code> est l’agent principal intégré. Aucun modèle n’est imposé par le projet.</p></div></aside></div></section>
+<section id="task-03" class="slide" data-title="Limiter les permissions du développeur" data-type="task" data-task="03"><div class="slide-inner"><div><p class="eyebrow">Tâche 03 · Contrôler</p><h2>Limiter les permissions du développeur</h2><p class="lead">Autorisations courantes sans friction ; autres commandes sur demande ; publication et suppression bloquées.</p><ol class="steps"><li>Remplacez <code>opencode.json</code> par la version ci-contre.</li><li>Demandez à <code>build</code> d’exécuter <code>git status</code> : autorisation automatique.</li><li>Demandez <code>git log -1</code> : OpenCode doit demander votre accord.</li><li>Demandez <code>git push</code> pour vérifier le blocage. Ne lancez pas vous-même la commande.</li></ol><p class="small-note">La dernière règle correspondante gagne. Ces permissions contrôlent les outils d’OpenCode.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">opencode.json · version à conserver</p><pre><code>{
+  &quot;$schema&quot;: &quot;https://opencode.ai/config.json&quot;,
+  &quot;agents&quot;: {
+    &quot;build&quot;: {
+      &quot;description&quot;: &quot;Développe et délègue les audits&quot;,
+      &quot;permissions&quot;: [
+        { &quot;action&quot;: &quot;edit&quot;, &quot;resource&quot;: &quot;*&quot;, &quot;effect&quot;: &quot;allow&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;*&quot;, &quot;effect&quot;: &quot;ask&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;git status *&quot;, &quot;effect&quot;: &quot;allow&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;git diff *&quot;, &quot;effect&quot;: &quot;allow&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;npx tsc --noEmit&quot;, &quot;effect&quot;: &quot;allow&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;node --test workshop/redirect.test.mjs&quot;, &quot;effect&quot;: &quot;allow&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;git push *&quot;, &quot;effect&quot;: &quot;deny&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;rm *&quot;, &quot;effect&quot;: &quot;deny&quot; },
+        { &quot;action&quot;: &quot;shell&quot;, &quot;resource&quot;: &quot;Remove-Item *&quot;, &quot;effect&quot;: &quot;deny&quot; },
+        { &quot;action&quot;: &quot;skill&quot;, &quot;resource&quot;: &quot;secure-code-review&quot;, &quot;effect&quot;: &quot;deny&quot; },
+        { &quot;action&quot;: &quot;subagent&quot;, &quot;resource&quot;: &quot;*&quot;, &quot;effect&quot;: &quot;deny&quot; },
+        { &quot;action&quot;: &quot;subagent&quot;, &quot;resource&quot;: &quot;security-reviewer&quot;, &quot;effect&quot;: &quot;allow&quot; }
+      ]
+    }
+  }
+}</code></pre></div></aside></div></section>
+<section id="task-04" class="slide" data-title="Créer le subagent de sécurité" data-type="task" data-task="04"><div class="slide-inner"><div><p class="eyebrow">Tâche 04 · Spécialiser</p><h2>Créer le subagent de sécurité</h2><p class="lead">Le reviewer lit et cherche, mais ne peut ni modifier les fichiers ni lancer un shell libre.</p><ol class="steps"><li>Créez <code>.opencode/agents/security-reviewer.md</code>.</li><li>Fermez OpenCode, puis relancez <code>opencode</code> depuis la racine du fork pour charger le nouvel agent.</li><li>Dans un autre terminal à la racine du fork, lancez <code>opencode debug agents</code> : <code>security-reviewer</code> doit figurer dans la liste.</li><li>Comparez ses permissions à celles de <code>build</code>.</li></ol><p class="small-note"><code>general</code> et <code>explore</code> sont des subagents intégrés. La liste montre les agents chargés ; les permissions de <code>build</code> déterminent lesquels il peut appeler. Si votre agent manque, vérifiez le nom et le chemin de son fichier.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/agents/security-reviewer.md</p><pre><code>---
+description: Audite la sécurité du diff sans modifier les fichiers
+mode: subagent
+permissions:
+  - action: edit
+    resource: &quot;*&quot;
+    effect: deny
+  - action: shell
+    resource: &quot;*&quot;
+    effect: deny
+  - action: shell
+    resource: &quot;git status --short&quot;
+    effect: allow
+  - action: shell
+    resource: &quot;git diff -- .&quot;
+    effect: allow
+  - action: subagent
+    resource: &quot;*&quot;
+    effect: deny
+  - action: skill
+    resource: &quot;*&quot;
+    effect: deny
+  - action: skill
+    resource: secure-code-review
+    effect: allow
+  - action: read
+    resource: &quot;*.env&quot;
+    effect: deny
+  - action: read
+    resource: &quot;*.env.*&quot;
+    effect: deny
+  - action: read
+    resource: &quot;*.env.example&quot;
+    effect: allow
+  - action: external_directory
+    resource: &quot;*&quot;
+    effect: deny
+---
+
+Tu es reviewer sécurité du dépôt agents.md.
+Lis le diff et le contexte utile. Ne modifie rien.
+Ne signale que les risques introduits par le diff.
+Pour chaque constat : gravité, fichier/ligne, preuve,
+impact, correction minimale. Termine par un verdict.</code></pre></div></aside></div></section>
+<section id="task-05" class="slide" data-title="Déléguer une première revue" data-type="task" data-task="05"><div class="slide-inner"><div><p class="eyebrow">Tâche 05 · Déléguer</p><h2>Déléguer une première revue</h2><p class="lead">L'agent principal fournit un contexte précis au reviewer, qui répond depuis une session enfant.</p><ol class="steps"><li>Rendez les fichiers nouveaux visibles à <code>git diff</code> avec une intention d’ajout.<pre><code>git add -N opencode.json .opencode/agents/security-reviewer.md
+git diff -- opencode.json .opencode/agents/security-reviewer.md</code></pre></li><li>Dans OpenCode, sélectionnez <code>build</code> et envoyez le prompt ci-contre.</li><li>Ouvrez la session enfant ; vérifiez qu’aucun fichier n’a été modifié.</li></ol></div><aside class="media-card"><div class="media-stack"><p class="kicker">Prompt à coller</p><pre><code>Demande au subagent security-reviewer d'auditer uniquement
+le diff de opencode.json et de .opencode/agents/security-reviewer.md.
+</code></pre><p class="small-note">Cette première délégation porte sur la configuration et montre les permissions du subagent en action.</p></div></aside></div></section>
+<section id="task-06" class="slide" data-title="Ajouter le Skill du projet" data-type="task" data-task="06"><div class="slide-inner"><div><p class="eyebrow">Tâche 06 · Outiller</p><h2>Ajouter le Skill du projet</h2><p class="lead">Le reviewer charge une méthode de sécurité adaptée au code Next.js du dépôt.</p><ol class="steps"><li>Créez <code>.opencode/skills/secure-code-review/SKILL.md</code>.</li><li>Dans OpenCode, demandez au reviewer de charger ce Skill.</li><li>Vérifiez l’appel à l’outil <code>skill</code> dans la session enfant.</li></ol><p class="small-note">Seul le reviewer peut charger ce Skill via l’outil <code>skill</code>. Ce réglage montre une délégation spécialisée ; il n’empêche pas <code>build</code> de lire le fichier.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/skills/secure-code-review/SKILL.md</p><pre><code>---
+name: secure-code-review
+description: Audit sécurité ciblé d&#x27;un diff TypeScript et Next.js
+---
+
+# Méthode
+1. Lire le diff ; auditer seulement les changements.
+2. Repérer les entrées : query, body, headers.
+3. Vérifier validation, injection, redirections.
+4. Examiner secrets, authentification, autorisation.
+5. Examiner logs, erreurs, réseau, dépendances.
+6. Confirmer le chemin d&#x27;exploitation de chaque risque.
+7. Rendre gravité, preuve, impact, correction minimale.
+8. Dire si aucun risque introduit n&#x27;est confirmé.
+
+Ne modifie pas le code.</code></pre></div></aside></div></section>
+<section id="task-07" class="slide" data-title="Créer /security-review" data-type="task" data-task="07"><div class="slide-inner"><div><p class="eyebrow">Tâche 07 · Automatiser</p><h2>Créer /security-review</h2><p class="lead">Transformez la revue ponctuelle en commande qui fournit automatiquement le diff au subagent.</p><ol class="steps"><li>Créez <code>.opencode/commands/security-review.md</code>.</li><li>Dans OpenCode, lancez <code>/security-review</code> sur le diff de configuration.</li><li>Vérifiez le format du rapport rendu à l’agent principal.</li></ol><p class="small-note">Les commandes dans <code>.opencode/commands/</code> sont chargées automatiquement : lancez <code>/security-review</code> sans redémarrer OpenCode. Pour tout nouveau fichier : <code>git add -N chemin/du/fichier</code> avant la revue.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/security-review.md</p><pre><code>---
+description: Audite la sécurité des changements courants
+agent: security-reviewer
+subagent: true
+---
+
+Charge le Skill secure-code-review avec l&#x27;outil skill.
+Exécute `git status --short` et `git diff -- .`.
+Limite l&#x27;analyse aux changements du diff.
+Lis le code voisin seulement pour confirmer un constat.
+Réponds avec : verdict, constats par gravité,
+preuves fichier/ligne, corrections minimales.
+Ne modifie aucun fichier.</code></pre><p class="small-note">Le reviewer lance ces commandes avec ses propres permissions ; <code>subagent: true</code> lui donne un contexte distinct.</p></div></aside></div></section>
+<section id="task-08" class="slide" data-title="Créer /prime et /plan-feature" data-type="task" data-task="08"><div class="slide-inner"><div><p class="eyebrow">Tâche 08 · Planifier</p><h2>Créer /prime et /plan-feature</h2><p class="lead">Préparez un état des lieux réutilisable avant de planifier un changement.</p><ol class="steps"><li>Créez les deux commandes ci-contre.</li><li>Lancez <code>/prime</code> : vérifiez qu’il résume l’état Git, les commandes déclarées et les contraintes d’<code>AGENTS.md</code> sans lancer de test.</li><li>Ne lancez pas encore <code>/plan-feature</code> : la demande à planifier arrivera à la tâche 11, après le patch et sa première revue à la tâche 10.</li></ol><p class="small-note"><code>/prime</code> prépare la session ; le test ciblé et le plan de correction viennent plus loin.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/prime.md</p><pre><code>---
+description: Prépare une session sur le dépôt courant
+---
+
+Lis AGENTS.md s'il existe et le manifeste principal du projet
+(par exemple package.json ou pyproject.toml). Ne parcours pas
+tout le dépôt. Exécute `git status --short --branch`.
+
+Résume brièvement :
+1. le rôle du dépôt et les fichiers d'entrée utiles ;
+2. la branche et les changements en cours ;
+3. les commandes de développement et de vérification
+   explicitement déclarées ou recommandées ;
+4. les contraintes à respecter pour la prochaine tâche.
+
+Distingue les contrôles disponibles de ceux effectivement lancés.
+N'exécute aucun test, n'installe rien et ne modifie aucun fichier.
+Si une information manque, indique-le sans l'inventer.</code></pre><p class="kicker">.opencode/commands/plan-feature.md</p><pre><code>---
+description: Prépare un plan court pour un changement ciblé
+agent: build
+---
+
+Demande : $ARGUMENTS
+Lis AGENTS.md et le code touché. Écris un plan dans
+workshop/plan.md : objectif, fichiers, étapes, risques,
+validation exécutable, critères d&#x27;acceptation.
+Ne modifie aucun autre fichier et n&#x27;implémente rien.</code></pre></div></aside></div></section>
+<section id="task-09" class="slide" data-title="Créer /execute" data-type="task" data-task="09"><div class="slide-inner"><div><p class="eyebrow">Tâche 09 · Préparer l’exécution</p><h2>Créer /execute</h2><p class="lead">Le plan relu servira ensuite de contrat d'implémentation : code, validation, rapport des écarts.</p><ol class="steps"><li>Créez <code>.opencode/commands/execute.md</code>.</li><li>Relisez le texte de cette commande : il doit prévoir la lecture de <code>workshop/plan.md</code> avant d’implémenter, respecter <code>AGENTS.md</code> et éviter <code>npm run test</code>, absent du dépôt.</li><li>Gardez <code>npm run dev</code> ouvert : le test HTTP du scénario en dépend.</li></ol><p class="small-note"><code>workshop/plan.md</code> n’existe pas encore : <code>/plan-feature</code> le créera à la tâche 11. Lancez <code>/execute</code> seulement après avoir relu ce plan.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/execute.md</p><pre><code>---
+description: Exécute le plan relu et valide le changement
+agent: build
+---
+
+Lis le fichier workshop/plan.md, puis applique-le dans l&#x27;ordre.
+Respecte AGENTS.md. Ne lance pas `npm run build`.
+Exécute les validations prévues. Si une validation échoue,
+répare puis relance-la. N&#x27;utilise pas `npm run test` :
+ce script n&#x27;existe pas dans ce dépôt.
+Rends un rapport : fichiers, résultats, écarts
+au plan et points à faire auditer.</code></pre></div></aside></div></section>
+<section id="task-10" class="slide" data-title="Introduire et auditer le scénario" data-type="task" data-task="10"><div class="slide-inner"><div><p class="eyebrow">Tâche 10 · Auditer</p><h2>Introduire et auditer le scénario</h2><p class="lead"><code>workshop/scenario.patch</code> est une contribution simulée : il ajoute une route API qui redirige vers la valeur du paramètre <code>to</code>. Inspectez le changement avant de le corriger.</p><ol class="steps"><li>Appliquez le patch fourni. Il crée <code>pages/api/go.ts</code>.<pre><code>git apply --check workshop/scenario.patch
+git apply workshop/scenario.patch
+git add -N pages/api/go.ts
+git diff -- pages/api/go.ts</code></pre></li><li>Contrat attendu : <code>GET /api/go?to=/examples</code> redirige vers une page locale.</li><li>Lancez <code>/security-review</code>. Relevez la ligne dangereuse et un exemple exploitable.</li><li>Gardez le rapport : il servira à <code>/plan-feature</code> à la tâche 11.</li></ol><p class="small-note"><code>git apply --check</code> vérifie le patch sans changer les fichiers ; <code>git apply</code> le pose ; <code>git add -N</code> montre le nouveau fichier dans <code>git diff</code>, sans indexer son contenu.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">Indice après votre revue</p><p><code>to</code> vient de la requête et arrive directement dans <code>res.redirect</code> : c’est une redirection ouverte.</p><p>Exemple : <code>/api/go?to=https%3A%2F%2Fexample.net%2Flogin</code>.</p><p class="small-note"><code>workshop/redirect.test.mjs</code> contient les critères comportementaux, sans fournir la correction.</p></div></aside></div></section>
+<section id="task-11" class="slide" data-title="Planifier, corriger, revérifier" data-type="task" data-task="11"><div class="slide-inner"><div><p class="eyebrow">Tâche 11 · Intégrer</p><h2>Planifier, corriger, revérifier</h2><p class="lead">Orchestrez build et security-reviewer jusqu'à un diff validé et une revue finale.</p><ol class="steps"><li>Après la première revue de la tâche 10, lancez <code>/plan-feature</code> avec la demande ci-contre. Relisez <code>workshop/plan.md</code> : les URL externes, <code>//</code> et les chemins avec barre oblique invers&eacute;e doivent être couverts.</li><li>Lancez <code>/execute</code>, <code>npm run dev</code> toujours actif.</li><li>Exécutez les validations si l’agent ne l’a pas fait. Les tests de refus échouent avant correction et réussissent après.<pre><code>npx tsc --noEmit
+node --test workshop/redirect.test.mjs
+git diff --check
+git diff -- pages/api/go.ts workshop/plan.md</code></pre></li><li>Relancez <code>/security-review</code>, examinez le diff, puis créez un commit si tout est bon.</li></ol></div><aside class="media-card"><div class="media-stack"><p class="kicker">Dans OpenCode</p><pre><code>/plan-feature Sécuriser GET /api/go : n’accepter que des chemins locaux commençant par un seul / et sans barre oblique invers&eacute;e ; rediriger vers / pour toute autre valeur. Préserver le statut 307 et faire passer workshop/redirect.test.mjs.</code></pre><pre><code>/execute
+/security-review</code></pre><p class="small-note">Attendu : <code>/examples</code> accepté ; <code>https://example.net/login</code> , <code>//example.net/login</code> et <code>/\example.net/login</code> renvoient vers <code>/</code>. Autre port : définir <code>TP_BASE_URL</code>.</p></div></aside></div></section>
+<section id="bonus" class="slide" data-title="Bonus · hook shell" data-type="concept"><div class="slide-inner"><div><p class="eyebrow">Bonus facultatif</p><h2>Journaliser les commandes shell</h2><p class="lead">Un plugin local peut observer les commandes de l’outil shell.</p><ol class="steps"><li>Créez <code>.opencode/plugins/shell-audit.js</code> à la racine du fork.</li><li>Lancez <code>opencode reload</code> dans un terminal à la racine du fork, puis demandez à <code>build</code> d’exécuter <code>git status</code>.</li><li>Dans PowerShell, affichez le journal avec <code>Get-Content .opencode/shell-audit.log -Tail 10</code>.</li><li>Option : limitez le journal aux commandes Git en ajoutant <code>if (!event.command.trim().startsWith("git ")) return;</code> au début du callback. Rechargez OpenCode et vérifiez le résultat.</li></ol><p class="small-note">Pour interdire une commande connue, utilisez une règle <code>deny</code> dans <code>opencode.json</code>. Le fichier <code>*.log</code> est ignoré par Git ; évitez d’y inscrire des secrets.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/plugins/shell-audit.js</p><pre><code>import { appendFile } from &quot;node:fs/promises&quot;;
+
+const logFile = new URL(&quot;../shell-audit.log&quot;, import.meta.url);
+
+export default {
+  id: &quot;workshop.shell-audit&quot;,
+  async setup(ctx) {
+    await ctx.shell.hook(&quot;create.before&quot;, async (event) =&gt; {
+      await appendFile(logFile, `${new Date().toISOString()}\t${event.command}\n`, &quot;utf8&quot;);
+    });
+  },
+};</code></pre><p class="small-note"><code>ctx.shell.hook("create.before", ...)</code> reçoit la commande avant son exécution.</p></div></aside></div></section>
+<section id="bonus-mcp" class="slide" data-title="Bonus · serveur MCP" data-type="concept"><div class="slide-inner"><div><p class="eyebrow">Bonus facultatif</p><h2>Brancher une documentation au projet</h2><p class="lead">Ajoutez à l’environnement du fork un serveur MCP de documentation, puis utilisez-le pour vérifier l’API Next.js du scénario.</p><ol class="steps"><li>Depuis la racine du fork <code>agents.md</code>, lancez les commandes ci-contre. Sans <code>--global</code>, le serveur est inscrit dans la configuration du projet.</li><li>Dans <code>opencode.json</code>, vérifiez que <code>context7</code> apparaît sous <code>mcp.servers</code>, en conservant <code>agents</code> et ses permissions. <code>opencode mcp list</code> doit indiquer <code>connected</code>.</li><li>Dans OpenCode, ouvrez <code>/mcps</code>, puis envoyez le prompt ci-contre à <code>build</code>. Vérifiez dans la trace qu’il interroge Context7 et cite la documentation obtenue.</li></ol><p class="small-note">La connexion nécessite Internet. L’usage de base de Context7 ne demande pas de clé API ; si OpenCode affiche <code>needs authentication</code>, suivez le parcours proposé dans <code>/mcps</code>. La syntaxe OpenCode V2 est <code>mcp.servers</code>.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">Dans le terminal du fork</p><pre><code>opencode mcp add context7 --url https://mcp.context7.com/mcp
+opencode mcp list</code></pre><p class="kicker">Extrait attendu de opencode.json</p><pre><code>"mcp": {
+  "servers": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}</code></pre><p class="kicker">Dans OpenCode</p><pre><code>Utilise Context7 pour retrouver la documentation Next.js 16 de res.redirect dans une API Route du Pages Router. Explique la signature utilisée dans pages/api/go.ts, cite ta source et ne modifie aucun fichier.</code></pre></div></aside></div></section>
+<section id="finish" class="slide compact" data-title="Bilan" data-type="concept"><div class="slide-inner"><div><p class="eyebrow">Bilan</p><h2>Un environnement réutilisable</h2><p class="lead">Vous avez configuré un développeur, un reviewer en lecture seule, des permissions distinctes, un Skill et des commandes de plan, exécution et audit.</p><p>Contrôlez <code>git status --short</code>. Vous pouvez conserver dans votre branche <code>opencode.json</code>, <code>.opencode/</code>, <code>pages/api/go.ts</code> et <code>workshop/plan.md</code>.</p><p class="small-note">Références : <a href="https://github.com/msftse-org/opencode-workshop">workshop</a> · <a href="https://opencode.ai/v2/docs/config/">config</a> · <a href="https://opencode.ai/v2/docs/agents/">agents</a> · <a href="https://opencode.ai/v2/docs/permissions/">permissions</a> · <a href="https://opencode.ai/v2/docs/commands/">commandes</a> · <a href="https://opencode.ai/v2/docs/skills/">Skills</a> · <a href="https://opencode.ai/v2/docs/plugins/">plugins</a> · <a href="https://opencode.ai/v2/docs/mcp-servers">MCP</a> · <a href="https://github.com/upstash/context7">Context7</a>.</p></div></div></section>
+</main>
+
+        <script src="assets/nodes.js"></script>
+    <script>
+      const deck = document.querySelector("#deck");
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const taskSlides = slides.filter((slide) => slide.dataset.type === "task");
+      const summarySlides = slides.filter((slide) =>
+        ["task", "concept"].includes(slide.dataset.type)
+      );
+      const progressBar = document.querySelector("#progress span");
+      const statusText = document.querySelector("#status");
+      const agendaProgress = document.querySelector("#agenda-progress");
+      const rail = document.querySelector("#rail");
+      const taskGrid = document.querySelector("#task-grid");
+      function updateProgress(activeSlide) {
+        const total = taskSlides.length;
+        const activeIndex = slides.indexOf(activeSlide);
+        let current = 0;
+        taskSlides.forEach((taskSlide, index) => {
+          if (slides.indexOf(taskSlide) <= activeIndex) {
+            current = index + 1;
+          }
+        });
+        const percent = total > 0 ? (current / total) * 100 : 0;
+
+        progressBar.style.width = `${percent}%`;
+        statusText.textContent = `${current}/${total}`;
+        if (agendaProgress) {
+          agendaProgress.textContent = `${current}/${total}`;
+        }
+
+        slides.forEach((slide) => slide.classList.toggle("active", slide === activeSlide));
+        document.querySelectorAll("#rail button").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.target === activeSlide.id);
+        });
+        document.body.classList.toggle("on-cover", activeSlide.id === "cover");
+
+        if (activeSlide.dataset.type === "task") {
+          activeSlide.dataset.progress = `${current}/${total}`;
+        }
+      }
+
+      function buildRail() {
+        rail.innerHTML = "";
+        slides.forEach((slide) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.dataset.target = slide.id;
+          btn.dataset.title = slide.dataset.title || slide.id;
+          btn.addEventListener("click", () => {
+            slide.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+          rail.appendChild(btn);
+        });
+      }
+
+      function buildTaskGrid() {
+        taskGrid.innerHTML = "";
+        summarySlides.forEach((slide) => {
+          const isTask = slide.dataset.type === "task";
+          const taskNumber =
+            slide.dataset.task || String(taskSlides.indexOf(slide) + 1).padStart(2, "0");
+          const eyebrow = slide.querySelector(".eyebrow");
+          const label = isTask
+            ? `Tâche ${taskNumber || ""}`.trim()
+            : eyebrow
+              ? eyebrow.textContent.trim()
+              : "Repère";
+          const card = document.createElement("a");
+          card.href = `#${slide.id}`;
+          card.className = "task-card";
+          card.innerHTML = `<span>${label}</span><strong>${slide.dataset.title}</strong>`;
+          card.addEventListener("click", (event) => {
+            event.preventDefault();
+            slide.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+          taskGrid.appendChild(card);
+        });
+      }
+
+      function bindJumpButtons() {
+        document.querySelectorAll("[data-jump]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = document.getElementById(btn.dataset.jump);
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          });
+        });
+      }
+
+      function observeSlides() {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                updateProgress(entry.target);
+              }
+            });
+          },
+          { root: deck, threshold: 0.6 }
+        );
+        slides.forEach((slide) => observer.observe(slide));
+      }
+
+      function bindKeys() {
+        document.addEventListener("keydown", (event) => {
+          if (event.target.closest("input, textarea, select, button, [contenteditable]")) {
+            return;
+          }
+          const keysNext = ["ArrowDown", "PageDown", " "];
+          const keysPrev = ["ArrowUp", "PageUp"];
+          if ([...keysNext, ...keysPrev, "Home", "End"].includes(event.key)) {
+            event.preventDefault();
+          }
+          const activeIndex = slides.findIndex((slide) => slide.classList.contains("active"));
+          if (keysNext.includes(event.key)) {
+            const next = slides[Math.min(activeIndex + 1, slides.length - 1)];
+            next.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+          if (keysPrev.includes(event.key)) {
+            const prev = slides[Math.max(activeIndex - 1, 0)];
+            prev.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+          if (event.key === "Home") {
+            slides[0].scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+          if (event.key === "End") {
+            slides[slides.length - 1].scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
+
+      buildRail();
+      buildTaskGrid();
+      bindJumpButtons();
+      observeSlides();
+      bindKeys();
+      updateProgress(slides[0]);
+
+      const nodes = new NodesJs({
+        id: "nodes",
+        width: window.innerWidth,
+        height: window.innerHeight,
+        particleSize: 2.6,
+        lineSize: 2,
+        particleColor: [31, 123, 255, 0.35],
+        lineColor: "31,123,255",
+        backgroundFrom: [10, 20, 45],
+        backgroundTo: [10, 20, 45],
+        backgroundDuration: 4000,
+        nobg: true,
+        number: window.innerWidth < 768 ? 30 : 80,
+        speed: 14,
+        pointerCircleRadius: 120
+      });
+
+      window.addEventListener("resize", () => {
+        nodes.setWidth(window.innerWidth);
+        nodes.setHeight(window.innerHeight);
+        nodes.placeNodes(nodes.number);
+      });
+    </script>
+  </body>
+</html>
