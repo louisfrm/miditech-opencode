@@ -572,7 +572,7 @@ permissions:
     resource: &quot;git status --short&quot;
     effect: allow
   - action: shell
-    resource: &quot;git diff -- .&quot;
+    resource: &quot;git diff *&quot;
     effect: allow
   - action: subagent
     resource: &quot;*&quot;
@@ -598,6 +598,8 @@ permissions:
 ---
 
 Tu es reviewer sécurité du dépôt agents.md.
+Le shell autorise uniquement `git status --short` et `git diff`
+(avec ou sans arguments). Lance ces commandes séparément.
 Lis le diff et le contexte utile. Ne modifie rien.
 Ne signale que les risques introduits par le diff.
 Pour chaque constat : gravité, fichier/ligne, preuve,
