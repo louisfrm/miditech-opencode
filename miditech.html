@@ -205,6 +205,19 @@
         color: var(--ink);
       }
 
+      .key-vault { width: min(100%, 44rem); margin: 0 auto; }
+      .key-vault label { display: block; font-weight: 600; margin: 1rem 0 0.5rem; }
+      .key-vault input, .key-vault textarea {
+        width: 100%; padding: 0.9rem 1rem; border: 1px solid var(--border);
+        border-radius: 12px; background: #fff; color: var(--ink); font: inherit;
+      }
+      .key-vault textarea { font-family: monospace; overflow-wrap: anywhere; resize: vertical; }
+      .key-vault :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+      .key-vault input[aria-invalid="true"] { border-color: #b42318; }
+      .key-vault .btn:disabled { opacity: 0.6; cursor: wait; }
+      .key-vault [hidden] { display: none; }
+      #api-key-status { min-height: 1.5em; }
+
       .badge-row {
         display: flex;
         flex-wrap: wrap;
@@ -523,6 +536,31 @@
 
     <main id="deck">
 <section id="cover" class="slide compact hero" data-title="Accueil" data-type="intro"><div class="slide-inner"><div class="hero-stack"><div class="hero-logo-wrap"><img class="hero-logo" src="assets/miditech.png" alt="Logo Miditech"></div><h1 class="hero-title"><span class="word-accent">OpenCode</span></h1><div class="badge-row"><span class="badge">Suite du Miditech Codex</span></div></div></div></section>
+<section id="api-access" class="slide compact" data-title="Clé API" data-type="access">
+  <div class="slide-inner">
+    <div class="media-card key-vault">
+      <div class="media-stack">
+        <p class="eyebrow">Accès à l’atelier</p>
+        <h2>Votre clé API</h2>
+        <p class="lead">Saisissez le mot de passe communiqué pendant la session pour afficher et copier la clé.</p>
+        <form id="api-key-form">
+          <label for="api-key-password">Mot de passe</label>
+          <input id="api-key-password" type="password" autocomplete="off" spellcheck="false" required aria-describedby="api-key-status">
+          <div class="cta-row"><button class="btn" type="submit">Afficher la clé</button></div>
+        </form>
+        <div id="api-key-result" hidden>
+          <label for="api-key-value">Clé API de l’atelier</label>
+          <textarea id="api-key-value" rows="4" readonly spellcheck="false" autocomplete="off"></textarea>
+          <div class="cta-row">
+            <button id="api-key-copy" class="btn" type="button">Copier la clé</button>
+            <button id="api-key-lock" class="btn" type="button">Masquer la clé</button>
+          </div>
+        </div>
+        <p id="api-key-status" class="small-note" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
 <section id="agenda" class="slide compact" data-title="Sommaire" data-type="agenda"><div class="slide-inner"><div><p class="eyebrow">Fil rouge</p><h2>Du coding agent à l'environnement agentique</h2><p class="lead">Sur votre fork d'<code>agents.md</code> : permissions, délégation, commandes, Skill et revue d'une faille dans un diff.</p><div class="task-grid" id="task-grid"></div></div></div></section>
 <section id="task-01" class="slide compact" data-title="Démarrer sur le fork" data-type="task" data-task="01"><div class="slide-inner"><div><p class="eyebrow">Tâche 01 · Préparer</p><h2>Démarrer sur le fork</h2><p class="lead">Travaillez dans le dépôt d'exercice ; gardez le serveur de développement séparé d'OpenCode.</p><ol class="steps"><li>Clonez le dépôt d’exercice et ouvrez sa racine.<pre><code>git clone https://github.com/louisfrm/agents.md-part2.git
 cd agents.md-part2
@@ -703,6 +741,7 @@ opencode mcp list</code></pre><p class="kicker">Extrait attendu de opencode.json
 <section id="finish" class="slide compact" data-title="Bilan" data-type="concept"><div class="slide-inner"><div><p class="eyebrow">Bilan</p><h2>Un environnement réutilisable</h2><p class="lead">Vous avez configuré un développeur, un reviewer en lecture seule, des permissions distinctes, un Skill et des commandes de plan, exécution et audit.</p><p>Contrôlez <code>git status --short</code>. Vous pouvez conserver dans votre branche <code>opencode.json</code>, <code>.opencode/</code>, <code>pages/api/go.ts</code> et <code>workshop/plan.md</code>.</p><p class="small-note">Références : <a href="https://github.com/msftse-org/opencode-workshop">workshop</a> · <a href="https://opencode.ai/v2/docs/config/">config</a> · <a href="https://opencode.ai/v2/docs/agents/">agents</a> · <a href="https://opencode.ai/v2/docs/permissions/">permissions</a> · <a href="https://opencode.ai/v2/docs/commands/">commandes</a> · <a href="https://opencode.ai/v2/docs/skills/">Skills</a> · <a href="https://opencode.ai/v2/docs/plugins/">plugins</a> · <a href="https://opencode.ai/v2/docs/mcp-servers">MCP</a> · <a href="https://github.com/upstash/context7">Context7</a>.</p></div></div></section>
 </main>
 
+    <script src="assets/api-key.js"></script>
         <script src="assets/nodes.js"></script>
     <script>
       const deck = document.querySelector("#deck");
