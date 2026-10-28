@@ -624,19 +624,13 @@ description: Audit sécurité ciblé d&#x27;un diff TypeScript et Next.js
 8. Dire si aucun risque introduit n&#x27;est confirmé.
 
 Ne modifie pas le code.</code></pre></div></aside></div></section>
-<section id="task-07" class="slide" data-title="Créer /security-review" data-type="task" data-task="07"><div class="slide-inner"><div><p class="eyebrow">Tâche 07 · Automatiser</p><h2>Créer /security-review</h2><p class="lead">Transformez la revue ponctuelle en commande qui fournit automatiquement le diff au subagent.</p><ol class="steps"><li>Créez <code>.opencode/commands/security-review.md</code>.</li><li>Dans OpenCode, lancez <code>/security-review</code> sur le diff de configuration.</li><li>Vérifiez le format du rapport rendu à l’agent principal.</li></ol><p class="small-note">Les commandes dans <code>.opencode/commands/</code> sont chargées automatiquement : lancez <code>/security-review</code> sans redémarrer OpenCode. Pour tout nouveau fichier : <code>git add -N chemin/du/fichier</code> avant la revue.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/security-review.md</p><pre><code>---
+<section id="task-07" class="slide" data-title="Créer /security-review" data-type="task" data-task="07"><div class="slide-inner"><div><p class="eyebrow">Tâche 07 · Automatiser</p><h2>Créer /security-review</h2><p class="lead">Transformez la revue ponctuelle en commande qui fait exécuter le Skill au subagent.</p><ol class="steps"><li>Créez <code>.opencode/commands/security-review.md</code>.</li><li>Dans OpenCode, lancez <code>/security-review</code> sur le diff de configuration.</li><li>Vérifiez le format du rapport rendu à l’agent principal.</li></ol><p class="small-note">Les commandes dans <code>.opencode/commands/</code> sont chargées automatiquement : lancez <code>/security-review</code> sans redémarrer OpenCode. Pour tout nouveau fichier : <code>git add -N chemin/du/fichier</code> avant la revue.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/security-review.md</p><pre><code>---
 description: Audite la sécurité des changements courants
 agent: security-reviewer
 subagent: true
 ---
 
-Charge le Skill secure-code-review avec l&#x27;outil skill.
-Exécute `git status --short` et `git diff -- .`.
-Limite l&#x27;analyse aux changements du diff.
-Lis le code voisin seulement pour confirmer un constat.
-Réponds avec : verdict, constats par gravité,
-preuves fichier/ligne, corrections minimales.
-Ne modifie aucun fichier.</code></pre><p class="small-note">Le reviewer lance ces commandes avec ses propres permissions ; <code>subagent: true</code> lui donne un contexte distinct.</p></div></aside></div></section>
+Charge le skill `secure-code-review` avec l’outil `skill` et exécute ses instructions.</code></pre><p class="small-note">Le reviewer exécute le Skill avec ses propres permissions ; <code>subagent: true</code> lui donne un contexte distinct.</p></div></aside></div></section>
 <section id="task-08" class="slide" data-title="Créer /prime et /plan-feature" data-type="task" data-task="08"><div class="slide-inner"><div><p class="eyebrow">Tâche 08 · Planifier</p><h2>Créer /prime et /plan-feature</h2><p class="lead">Préparez un état des lieux réutilisable avant de planifier un changement.</p><ol class="steps"><li>Créez les deux commandes ci-contre.</li><li>Lancez <code>/prime</code> : vérifiez qu’il résume l’état Git, les commandes déclarées et les contraintes d’<code>AGENTS.md</code> sans lancer de test.</li><li>Ne lancez pas encore <code>/plan-feature</code> : la demande à planifier arrivera à la tâche 11, après le patch et sa première revue à la tâche 10.</li></ol><p class="small-note"><code>/prime</code> prépare la session ; le test ciblé et le plan de correction viennent plus loin.</p></div><aside class="media-card"><div class="media-stack"><p class="kicker">.opencode/commands/prime.md</p><pre><code>---
 description: Prépare une session sur le dépôt courant
 ---
